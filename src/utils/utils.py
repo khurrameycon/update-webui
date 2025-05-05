@@ -13,7 +13,7 @@ from langchain_mistralai import ChatMistralAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_ollama import ChatOllama
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
-from langchain_ibm import ChatWatsonx
+# from langchain_ibm import ChatWatsonx
 import logging
 from .llm import DeepSeekR1ChatOpenAI, DeepSeekR1ChatOllama
 
@@ -243,23 +243,23 @@ def get_llm_model(provider: str, **kwargs):
             base_url=base_url,
             api_key=api_key,
         )
-    elif provider == "ibm":
-        parameters = {
-            "temperature": kwargs.get("temperature", 0.0),
-            "max_tokens": kwargs.get("num_ctx", 32000)
-        }
-        if not kwargs.get("base_url", ""):
-            base_url = os.getenv("IBM_ENDPOINT", "https://us-south.ml.cloud.ibm.com")
-        else:
-            base_url = kwargs.get("base_url")
+    # elif provider == "ibm":
+    #     parameters = {
+    #         "temperature": kwargs.get("temperature", 0.0),
+    #         "max_tokens": kwargs.get("num_ctx", 32000)
+    #     }
+    #     if not kwargs.get("base_url", ""):
+    #         base_url = os.getenv("IBM_ENDPOINT", "https://us-south.ml.cloud.ibm.com")
+    #     else:
+    #         base_url = kwargs.get("base_url")
 
-        return ChatWatsonx(
-            model_id=kwargs.get("model_name", "ibm/granite-vision-3.1-2b-preview"),
-            url=base_url,
-            project_id=os.getenv("IBM_PROJECT_ID"),
-            apikey=os.getenv("IBM_API_KEY"),
-            params=parameters
-        )    
+    #     return ChatWatsonx(
+    #         model_id=kwargs.get("model_name", "ibm/granite-vision-3.1-2b-preview"),
+    #         url=base_url,
+    #         project_id=os.getenv("IBM_PROJECT_ID"),
+    #         apikey=os.getenv("IBM_API_KEY"),
+    #         params=parameters
+    #     )    
     elif provider == "moonshot":
         return ChatOpenAI(
             model=kwargs.get("model_name", "moonshot-v1-32k-vision-preview"),
