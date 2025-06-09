@@ -763,6 +763,70 @@ async def run_deep_search(research_task, max_search_iteration_input, max_query_p
 
     return markdown_content, file_path, gr.update(value="Stop", interactive=True), gr.update(interactive=True)
 
+
+def handle_research_chat(message, chat_history, research_content, llm_provider, llm_model_name, llm_num_ctx, llm_temperature, llm_base_url, llm_api_key):
+    """Handle chat about research results"""
+    
+    if not message.strip():
+        return chat_history, ""
+    
+    if not research_content or research_content == "":
+        return chat_history + [["User", message], ["Assistant", "Please run a research task first before asking questions."]], ""
+    
+    try:
+        # Get LLM
+        llm = utils.get_llm_model(
+            provider=llm_provider,
+            model_name=llm_model_name,
+            num_ctx=llm_num_ctx,
+            temperature=llm_temperature,
+            base_url=llm_base_url,
+            api_key=llm_api_key,
+        )
+        
+        # Create system prompt
+        system_prompt = f"""You are a helpful research assistant. A user has conducted research and received the following research report:
+
+---RESEARCH REPORT---
+{research_content}
+---END RESEARCH REPORT---
+
+The user wants to discuss this research or ask for modifications. Please respond helpfully based on the research content. If they ask for changes or additions, provide the modified content in markdown format.
+
+Be conversational and helpful."""
+
+        # Prepare messages for LLM
+        from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+        
+        messages = [SystemMessage(content=system_prompt)]
+        
+        # Add chat history
+        if chat_history:
+            for chat_msg in chat_history:
+                messages.append(HumanMessage(content=chat_msg[0]))
+                messages.append(AIMessage(content=chat_msg[1]))
+        
+        # Add current message
+        messages.append(HumanMessage(content=message))
+        
+        # Get LLM response
+        response = llm.invoke(messages)
+        ai_response = response.content
+        
+        # Update chat history
+        if chat_history is None:
+            chat_history = []
+        
+        chat_history.append([message, ai_response])
+        
+        return chat_history, ""
+        
+    except Exception as e:
+        if chat_history is None:
+            chat_history = []
+        chat_history.append([message, f"Sorry, I encountered an error: {str(e)}"])
+        return chat_history, ""
+
 hide_menu_css = """
     /* Hide Recordings and UI Configuration menu items */
     div[class*="svelte-"][class*="py-1"] > button[role="menuitem"]:nth-of-type(1),
@@ -1085,20 +1149,33 @@ def create_ui(theme_name="Ocean"):
 
             with gr.TabItem("Research Agent", id=5):
                 research_task_input = gr.Textbox(label="Research Task", lines=5,
-                                                 value="Compose a report on the use of Reinforcement Learning for training Large Language Models, encompassing its origins, current advancements, and future prospects, substantiated with examples of relevant models and techniques. The report should reflect original insights and analysis, moving beyond mere summarization of existing literature.",
-                                                 interactive=True)
+                                                value="Compose a report on the use of Reinforcement Learning for training Large Language Models, encompassing its origins, current advancements, and future prospects, substantiated with examples of relevant models and techniques. The report should reflect original insights and analysis, moving beyond mere summarization of existing literature.",
+                                                interactive=True)
                 with gr.Row():
                     max_search_iteration_input = gr.Number(label="Max Search Iteration", value=3,
-                                                           precision=0,
-                                                           interactive=True)  # precision=0 确保是整数
+                                                        precision=0,
+                                                        interactive=True)  # precision=0 确保是整数
                     max_query_per_iter_input = gr.Number(label="Max Query per Iteration", value=1,
-                                                         precision=0,
-                                                         interactive=True)  # precision=0 确保是整数
+                                                        precision=0,
+                                                        interactive=True)  # precision=0 确保是整数
                 with gr.Row():
                     research_button = gr.Button("▶️ Run Deep Research", variant="primary", scale=2)
                     stop_research_button = gr.Button("⏹ Stop", variant="stop", scale=1)
+                
                 markdown_output_display = gr.Markdown(label="Research Report")
                 markdown_download = gr.File(label="Download Research Report")
+                
+                # ADD CHAT INTERFACE HERE
+                gr.Markdown("### 💬 Chat about Research Results")
+                research_chat_history = gr.Chatbot(label="Research Chat", height=300)
+                with gr.Row():
+                    research_chat_input = gr.Textbox(
+                        label="Ask about the research", 
+                        placeholder="e.g., 'Can you make this more detailed?' or 'Add information about recent developments'",
+                        lines=2,
+                        scale=4
+                    )
+                    research_chat_send = gr.Button("💬 Send", variant="primary", scale=1)
 
             # Bind the stop button click event after errors_output is defined
             stop_button.click(
@@ -1145,6 +1222,13 @@ def create_ui(theme_name="Ocean"):
                 fn=stop_research_agent,
                 inputs=[],
                 outputs=[stop_research_button, research_button],
+            )
+            # ADD THIS CHAT HANDLER
+            research_chat_send.click(
+                fn=handle_research_chat,
+                inputs=[research_chat_input, research_chat_history, markdown_output_display, llm_provider,
+                        llm_model_name, ollama_num_ctx, llm_temperature, llm_base_url, llm_api_key],
+                outputs=[research_chat_history, research_chat_input]
             )
 
             with gr.TabItem("🎥 Recordings", id=7, visible=False):

@@ -16,6 +16,8 @@ from langchain_openai import AzureChatOpenAI, ChatOpenAI
 # from langchain_ibm import ChatWatsonx
 import logging
 from .llm import DeepSeekR1ChatOpenAI, DeepSeekR1ChatOllama
+# from groq import Groq
+from langchain_groq import ChatGroq
 
 logger = logging.getLogger(__name__)
 LLM_PREFS_FILE = "llm_prefs.json"
@@ -29,8 +31,14 @@ PROVIDER_DISPLAY_NAMES = {
     "alibaba": "Alibaba",
     "moonshot": "MoonShot",
     "unbound": "Unbound AI",
+    "groq": "Groq",  # Add this line
     "ibm": "IBM"
 }
+
+
+
+
+
 
 def get_root_dir():
     """Gets the root directory of the project where webui.py resides."""
@@ -289,6 +297,12 @@ def get_llm_model(provider: str, **kwargs):
             model_name=kwargs.get("model_name", "Qwen/QwQ-32B"),
             temperature=kwargs.get("temperature", 0.0),
         )
+    elif provider == "groq":
+        return ChatGroq(
+            model=kwargs.get("model_name", "llama-3.1-70b-versatile"),
+            temperature=kwargs.get("temperature", 0.0),
+            api_key=api_key,
+        )
     else:
         raise ValueError(f"Unsupported provider: {provider}")
 
@@ -298,6 +312,7 @@ model_names = {
     "anthropic": ["claude-3-5-sonnet-20241022", "claude-3-5-sonnet-20240620", "claude-3-opus-20240229"],
     "openai": ["gpt-4o", "gpt-4", "gpt-3.5-turbo", "o3-mini"],
     "deepseek": ["deepseek-chat", "deepseek-reasoner"],
+    "groq": ["meta-llama/llama-4-scout-17b-16e-instruct", "llama-3.1-70b-versatile", "llama-3.1-8b-instant"], 
     "google": ["gemini-2.0-flash", "gemini-2.0-flash-thinking-exp", "gemini-1.5-flash-latest",
                "gemini-1.5-flash-8b-latest", "gemini-2.0-flash-thinking-exp-01-21", "gemini-2.0-pro-exp-02-05"],
     "ollama": ["qwen2.5:7b", "qwen2.5:14b", "qwen2.5:32b", "qwen2.5-coder:14b", "qwen2.5-coder:32b", "llama2:7b",
