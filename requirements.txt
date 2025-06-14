@@ -8,3 +8,4 @@ MainContentExtractor==0.0.4
 # langchain-ibm
 lxml_html_clean
 lxml[html_clean]
+groq
