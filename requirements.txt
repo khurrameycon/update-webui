@@ -9,3 +9,4 @@ MainContentExtractor==0.0.4
 lxml_html_clean
 lxml[html_clean]
 groq
+langchain_groq
